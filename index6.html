@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Urban Goals</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+
+body {
+    margin:0;
+    font-family:'Cairo', sans-serif;
+    background: radial-gradient(circle at top, #1a1a2e, #0f0f0f);
+    color:white;
+}
+
+/* Layout */
+.container{
+    display:flex;
+    min-height:100vh;
+}
+
+/* Sidebar */
+.sidebar{
+    width:280px;
+    background:rgba(255,255,255,0.03);
+    backdrop-filter: blur(10px);
+    padding:20px;
+    border-right:1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar h2{
+    color:#00f5d4;
+}
+
+button, input, select{
+    width:100%;
+    padding:12px;
+    margin-top:8px;
+    border:none;
+    border-radius:10px;
+    outline:none;
+}
+
+button{
+    background:linear-gradient(135deg,#00f5d4,#00bbf9);
+    cursor:pointer;
+    font-weight:bold;
+    transition:0.3s;
+}
+
+button:hover{
+    transform:scale(1.03);
+}
+
+/* Main */
+.main{
+    flex:1;
+    padding:20px;
+}
+
+/* Card */
+.card{
+    background:rgba(255,255,255,0.05);
+    padding:15px;
+    margin-bottom:15px;
+    border-radius:15px;
+    border:1px solid rgba(255,255,255,0.08);
+    animation:fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn{
+    from{opacity:0; transform:translateY(10px);}
+    to{opacity:1; transform:translateY(0);}
+}
+
+/* Goal item */
+.goal{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px;
+    margin-top:8px;
+    border-radius:10px;
+    background:rgba(255,255,255,0.06);
+    transition:0.3s;
+}
+
+.goal:hover{
+    transform:scale(1.02);
+}
+
+.done{
+    opacity:0.5;
+    text-decoration:line-through;
+}
+
+/* Categories */
+.health{border-left:4px solid #ff4d6d;}
+.money{border-left:4px solid #ffd166;}
+.study{border-left:4px solid #4cc9f0;}
+.productivity{border-left:4px solid #80ff72;}
+.mind{border-left:4px solid #c77dff;}
+
+/* Progress */
+.progress{
+    height:10px;
+    background:#222;
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.bar{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,#00f5d4,#00bbf9);
+    transition:0.5s;
+}
+
+/* Responsive */
+@media(max-width:800px){
+    .container{
+        flex-direction:column;
+    }
+    .sidebar{
+        width:100%;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- Sidebar -->
+<div class="sidebar">
+<h2>🎯 Goals Hub</h2>
+
+<input id="goalText" placeholder="اكتب هدفك">
+<select id="cat">
+    <option value="health">صحي</option>
+    <option value="money">مالي</option>
+    <option value="study">تعليمي</option>
+    <option value="productivity">إنتاجي</option>
+    <option value="mind">عقلي</option>
+</select>
+
+<button onclick="addGoal()">+ إضافة هدف</button>
+
+<hr>
+
+<h3>📊 التقدم اليومي</h3>
+<div class="progress">
+<div class="bar" id="bar"></div>
+</div>
+
+<p id="percent">0%</p>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+<div class="card">
+<h3>🔥 أهداف اليوم</h3>
+<div id="list"></div>
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+let goals = JSON.parse(localStorage.getItem("goals") || "[]");
+
+function save(){
+    localStorage.setItem("goals", JSON.stringify(goals));
+}
+
+function addGoal(){
+    let text = document.getElementById("goalText").value;
+    let cat = document.getElementById("cat").value;
+
+    if(!text.trim()) return;
+
+    goals.push({
+        text,
+        cat,
+        done:false,
+        date:new Date().toDateString()
+    });
+
+    document.getElementById("goalText").value="";
+    save();
+    render();
+}
+
+function toggle(i){
+    goals[i].done = !goals[i].done;
+    save();
+    render();
+}
+
+function render(){
+
+    let list = document.getElementById("list");
+    list.innerHTML = "";
+
+    let today = new Date().toDateString();
+    let todayGoals = goals.filter(g=>g.date===today);
+
+    todayGoals.forEach((g,i)=>{
+        let div = document.createElement("div");
+        div.className = "goal " + g.cat;
+        if(g.done) div.classList.add("done");
+
+        div.innerHTML = `
+            <span>${g.text}</span>
+            <button onclick="toggle(${goals.indexOf(g)})">✔</button>
+        `;
+
+        list.appendChild(div);
+    });
+
+    let done = todayGoals.filter(g=>g.done).length;
+    let total = todayGoals.length || 1;
+    let percent = Math.round((done/total)*100);
+
+    document.getElementById("percent").innerText = percent + "%";
+    document.getElementById("bar").style.width = percent + "%";
+}
+
+render();
+
+</script>
+
+</body>
+</html>
