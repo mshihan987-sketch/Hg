@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Goals Tracker</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    margin:0;
+    font-family: Arial;
+    background:#0f0f0f;
+    color:white;
+    display:flex;
+}
+
+/* Sidebar */
+.sidebar {
+    width:250px;
+    background:#151515;
+    height:100vh;
+    padding:15px;
+    position:fixed;
+    overflow:auto;
+}
+
+.main {
+    margin-left:260px;
+    padding:20px;
+    width:100%;
+}
+
+h2 {color:#00ffd0;}
+
+input, select, button {
+    width:100%;
+    padding:10px;
+    margin:5px 0;
+    border:none;
+    border-radius:8px;
+}
+
+button {
+    background:#00ffd0;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.card {
+    background:#1c1c1c;
+    padding:15px;
+    margin-top:10px;
+    border-radius:12px;
+}
+
+.goal {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:8px;
+    background:#222;
+    margin-top:5px;
+    border-radius:8px;
+}
+
+.done {text-decoration:line-through; opacity:0.6;}
+
+/* colors by category */
+.health {border-left:5px solid #ff4d6d;}
+.money {border-left:5px solid #ffd166;}
+.study {border-left:5px solid #4cc9f0;}
+.productivity {border-left:5px solid #80ff72;}
+.mind {border-left:5px solid #b388ff;}
+
+@media(max-width:768px){
+    .sidebar{
+        position:relative;
+        width:100%;
+        height:auto;
+    }
+    .main{margin-left:0;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+<h3>📅 المهام اليومية</h3>
+<input id="taskInput" placeholder="اكتب مهمة...">
+<button onclick="addTask()">إضافة</button>
+<div id="tasks"></div>
+
+<hr>
+
+<h3>📊 التقارير</h3>
+<select id="reportType" onchange="renderChart()">
+    <option value="week">أسبوعي</option>
+    <option value="month">شهري</option>
+    <option value="year">سنوي</option>
+</select>
+
+<canvas id="chart"></canvas>
+</div>
+
+<div class="main">
+
+<h2>🎯 تتبع الأهداف</h2>
+
+<div class="card">
+<input id="goalText" placeholder="هدف جديد">
+<select id="category">
+    <option value="health">صحي</option>
+    <option value="money">مالي</option>
+    <option value="study">تعليمي</option>
+    <option value="productivity">إنتاجي</option>
+    <option value="mind">عقلي</option>
+</select>
+
+<button onclick="addGoal()">إضافة هدف</button>
+</div>
+
+<div class="card">
+<h3>الأهداف اليوم</h3>
+<div id="goals"></div>
+<p id="progress"></p>
+</div>
+
+</div>
+
+<script>
+
+let goals = JSON.parse(localStorage.getItem("goals") || "[]");
+let tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+
+function save(){
+    localStorage.setItem("goals", JSON.stringify(goals));
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+function addGoal(){
+    let text = document.getElementById("goalText").value;
+    let cat = document.getElementById("category").value;
+
+    if(!text) return;
+
+    goals.push({text, cat, done:false, date: new Date().toDateString()});
+    document.getElementById("goalText").value="";
+    save();
+    renderGoals();
+}
+
+function toggleGoal(i){
+    goals[i].done = !goals[i].done;
+    save();
+    renderGoals();
+}
+
+function renderGoals(){
+    let box = document.getElementById("goals");
+    box.innerHTML = "";
+
+    let todayGoals = goals.filter(g => g.date === new Date().toDateString());
+
+    todayGoals.forEach((g,i)=>{
+        let div = document.createElement("div");
+        div.className = "goal " + g.cat;
+        if(g.done) div.classList.add("done");
+
+        div.innerHTML = `
+            <span>${g.text}</span>
+            <button onclick="toggleGoal(${i})">✔</button>
+        `;
+        box.appendChild(div);
+    });
+
+    let done = todayGoals.filter(g=>g.done).length;
+    let total = todayGoals.length || 1;
+    let percent = Math.round((done/total)*100);
+
+    document.getElementById("progress").innerText =
+        "📊 نسبة الإنجاز اليوم: " + percent + "%";
+}
+
+/* TASKS */
+function addTask(){
+    let t = document.getElementById("taskInput").value;
+    if(!t) return;
+
+    tasks.push({t, done:false});
+    document.getElementById("taskInput").value="";
+    save();
+    renderTasks();
+}
+
+function toggleTask(i){
+    tasks[i].done = !tasks[i].done;
+    save();
+    renderTasks();
+}
+
+function renderTasks(){
+    let box = document.getElementById("tasks");
+    box.innerHTML = "";
+
+    tasks.forEach((t,i)=>{
+        let div = document.createElement("div");
+        div.className = "goal";
+        if(t.done) div.classList.add("done");
+
+        div.innerHTML = `
+            <span>${t.t}</span>
+            <button onclick="toggleTask(${i})">✔</button>
+        `;
+        box.appendChild(div);
+    });
+}
+
+/* REPORTS (simple demo data) */
+function renderChart(){
+    let ctx = document.getElementById("chart");
+
+    let type = document.getElementById("reportType").value;
+
+    let data = {
+        week:[40,60,80,50,90,70,100],
+        month:[60,70,80,90,85,95,100],
+        year:[50,60,65,70,75,80,90]
+    };
+
+    new Chart(ctx, {
+        type:'line',
+        data:{
+            labels:["1","2","3","4","5","6","7"],
+            datasets:[{
+                label:"الإنجاز",
+                data:data[type],
+                borderColor:"#00ffd0"
+            }]
+        }
+    });
+}
+
+renderGoals();
+renderTasks();
+renderChart();
+
+</script>
+
+</body>
+</html>
