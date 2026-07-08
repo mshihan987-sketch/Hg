@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bonk!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Bangers&display=swap" rel="stylesheet">
+<style>
+  /* ===================== GENERAL STYLES ===================== */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  body {
+    font-family: 'Baloo 2', sans-serif;
+    background: #1a1a2e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Game Stage Control - Compact & Responsive */
+  .stage {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    height: 90vh;
+    max-height: 720px;
+    background: linear-gradient(to bottom, #74b9ff, #a29bfe);
+    border-radius: 24px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+  }
+
+  .sky {
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 70%;
+    background: linear-gradient(to bottom, #3cc0ff 0%, #a2d2ff 100%);
+    z-index: 1;
+  }
+
+  .ground {
+    position: absolute;
+    bottom: 0; left: 0; right: 0; height: 30%;
+    background: linear-gradient(to bottom, #20bf6b, #10ac84);
+    border-top: 8px solid #1e1b16;
+    z-index: 2;
+  }
+
+  .eyebrow {
+    position: relative;
+    z-index: 5;
+    font-family: 'Bangers', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 1px;
+    color: #fff;
+    text-shadow: 3px 3px 0px #1e1b16;
+    text-transform: uppercase;
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  /* ===================== CHARACTER LAYER (SMALLER SIZE) ===================== */
+  .character-wrap {
+    position: relative;
+    width: 150px; /* Adjusted to make the character small */
+    height: 220px;
+    z-index: 3;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    margin-bottom: 40px;
+  }
+
+  .character {
+    width: 100%;
+    height: auto;
+    transform-origin: bottom center;
+    display: block;
+  }
+
+  .char-shadow {
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 14px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 50%;
+    z-index: 2;
+    transition: transform 0.3s ease;
+  }
+
+  /* Funny/Comedic Squash Animation */
+  .squash-anim {
+    animation: funnySquash 0.9s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+  @keyframes funnySquash {
+    0% { transform: scale(1, 1) rotate(0deg); }
+    5% { transform: scale(1.3, 0.4) rotate(-5deg); } /* Flat & slightly tilted */
+    15% { transform: scale(0.7, 0.3) rotate(5deg); }  /* Super flattened state */
+    65% { transform: scale(0.7, 0.3) rotate(5deg); }  /* Stays squashed */
+    80% { transform: scale(1.1, 1.1) rotate(-2deg); } /* Bounces back up dazed */
+    90% { transform: scale(0.95, 0.95) rotate(1deg); }
+    100% { transform: scale(1, 1) rotate(0deg); }
+  }
+
+  /* ===================== HAMMER LAYER (LARGER SIZE & ALWAYS ON TOP) ===================== */
+  .hammer {
+    position: absolute;
+    top: 12%;
+    right: 10%;
+    width: 150px; /* Made the hammer significantly larger */
+    height: auto;
+    z-index: 10; /* Strictly above the character image */
+    transform-origin: 50% 85%;
+    transform: rotate(25deg);
+    pointer-events: none;
+  }
+
+  .hammer-swing {
+    animation: hammerSwingEff 0.85s cubic-bezier(0.3, 1.5, 0.2, 1) forwards;
+  }
+
+  @keyframes hammerSwingEff {
+    0% { transform: rotate(25deg); }
+    20% { transform: rotate(60deg); } /* More dramatic anticipation pull back */
+    35% { transform: rotate(-55deg) translate(-40px, -30px); } /* Powerful Comedic Smash */
+    45% { transform: rotate(-40deg) translate(-30px, -20px); } /* Fun bounce from hit */
+    55% { transform: rotate(-50deg) translate(-45px, -30px); }
+    75% { transform: rotate(25deg); } 
+    100% { transform: rotate(25deg); }
+  }
+
+  /* ===================== IMPACT & VISUAL EFFECTS ===================== */
+  .fx-layer {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 15;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .bonk-text {
+    font-family: 'Bangers', sans-serif;
+    font-size: 5rem;
+    color: #fff200;
+    -webkit-text-stroke: 4px #1e1b16;
+    text-shadow: 6px 6px 0px #d8432b;
+    opacity: 0;
+    transform: scale(0.3) rotate(-15deg);
+  }
+
+  .bonk-text.pop {
+    animation: textPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+
+  @keyframes textPop {
+    0% { opacity: 0; transform: scale(0.3) rotate(-20deg); }
+    15% { opacity: 1; transform: scale(1.4) rotate(-10deg); }
+    30% { transform: scale(1) rotate(-12deg); }
+    70% { opacity: 1; transform: scale(1) rotate(-12deg); }
+    100% { opacity: 0; transform: scale(0.8) rotate(-5deg); }
+  }
+
+  .flash {
+    animation: flashScreen 0.15s ease-out;
+  }
+  @keyframes flashScreen {
+    0% { background: rgba(255, 255, 255, 0); }
+    50% { background: rgba(255, 255, 255, 0.5); }
+    100% { background: rgba(255, 255, 255, 0); }
+  }
+
+  .shake {
+    animation: screenShake 0.25s linear;
+  }
+  @keyframes screenShake {
+    0%, 100% { transform: translate(0, 0); }
+    20% { transform: translate(-10px, 8px); }
+    40% { transform: translate(10px, -8px); }
+    60% { transform: translate(-8px, -5px); }
+    80% { transform: translate(8px, 5px); }
+  }
+
+  .particle {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: #fff200;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    border: 1px solid #1e1b16;
+    opacity: 0;
+  }
+  @keyframes starBurst {
+    0% { transform: translate(0, 0) scale(0) rotate(0deg); opacity: 1; }
+    100% { transform: translate(var(--mx), var(--my)) scale(1.3) rotate(360deg); opacity: 0; }
+  }
+
+  /* ===================== PREMIUM BUTTON ===================== */
+  .bonk-btn {
+    position: relative;
+    z-index: 20;
+    width: 85%;
+    max-width: 280px;
+    height: 64px;
+    background: linear-gradient(to bottom, #ff4757, #ff6b81);
+    border: 4px solid #1e1b16;
+    border-radius: 18px;
+    cursor: pointer;
+    outline: none;
+    box-shadow: 0 8px 0 #b33939, 0 12px 20px rgba(0,0,0,0.3);
+    transition: all 0.1s ease;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .bonk-btn::before {
+    content: '';
+    position: absolute;
+    top: 2px; left: 4px; right: 4px; height: 35%;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.45), rgba(255,255,255,0));
+    border-radius: 12px 12px 4px 4px;
+  }
+
+  .bonk-btn span {
+    font-family: 'Bangers', sans-serif;
+    font-size: 2rem;
+    color: #fff;
+    letter-spacing: 2px;
+    text-shadow: 3px 3px 0px #1e1b16;
+    transform: translateY(-1px);
+    transition: transform 0.1s ease;
+  }
+
+  @media(hover: hover) {
+    .bonk-btn:hover {
+      background: linear-gradient(to bottom, #ff6b81, #ff4757);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 0 #b33939, 0 15px 25px rgba(0,0,0,0.35);
+    }
+  }
+
+  .bonk-btn:active {
+    transform: translateY(6px) scale(0.98);
+    box-shadow: 0 2px 0 #b33939, 0 4px 10px rgba(0,0,0,0.4);
+  }
+</style>
+</head>
+<body>
+
+  <main class="stage" id="stage">
+    <div class="sky"></div>
+    <div class="ground"></div>
+
+    <p class="eyebrow">tap when he's had enough attitude</p>
+
+    <div class="character-wrap">
+      <div class="char-shadow" id="charShadow"></div>
+      <img id="character" class="character" src="47368.jpg" alt="Character">
+    </div>
+
+    <svg id="hammer" class="hammer" viewBox="0 0 220 320" xmlns="http://www.w3.org/2000/svg">
+      <rect x="96" y="90" width="28" height="220" rx="10" fill="#B97A3D" stroke="#1E1B16" stroke-width="8"/>
+      <rect x="20" y="10" width="180" height="100" rx="22" fill="#D8432B" stroke="#1E1B16" stroke-width="9"/>
+      <rect x="20" y="10" width="180" height="34" rx="16" fill="#F0654A"/>
+    </svg>
+
+    <div class="fx-layer" id="fxLayer">
+      <div class="bonk-text" id="bonkText">BONK!</div>
+    </div>
+
+    <button class="bonk-btn" id="bonkBtn">
+      <span>BONK!</span>
+    </button>
+  </main>
+
+<script>
+  const bonkBtn = document.getElementById('bonkBtn');
+  const hammer = document.getElementById('hammer');
+  const character = document.getElementById('character');
+  const charShadow = document.getElementById('charShadow');
+  const bonkText = document.getElementById('bonkText');
+  const stage = document.getElementById('stage');
+  const fxLayer = document.getElementById('fxLayer');
+
+  let isAnimating = false;
+
+  bonkBtn.addEventListener('click', () => {
+    if (isAnimating) return;
+    isAnimating = true;
+
+    hammer.classList.add('hammer-swing');
+
+    // Exact impact synchronization for comedic timing
+    setTimeout(() => {
+      character.classList.add('squash-anim');
+      if(charShadow) charShadow.style.transform = 'translateX(-50%) scale(1.4, 0.6)';
+
+      bonkText.classList.add('pop');
+      stage.classList.add('shake');
+      fxLayer.classList.add('flash');
+
+      createBurstParticles();
+    }, 240); 
+
+    setTimeout(() => {
+      hammer.classList.remove('hammer-swing');
+      character.classList.remove('squash-anim');
+      bonkText.classList.remove('pop');
+      stage.classList.remove('shake');
+      fxLayer.classList.remove('flash');
+      if(charShadow) charShadow.style.transform = 'translateX(-50%) scale(1)';
+      
+      isAnimating = false;
+    }, 900);
+  });
+
+  function createBurstParticles() {
+    const numParticles = 8;
+    const angles = [0, 45, 90, 135, 180, 225, 270, 315];
+    const originX = stage.offsetWidth / 2 - 20;
+    const originY = stage.offsetHeight * 0.42; // Dynamic hit location for smaller character
+
+    for (let i = 0; i < numParticles; i++) {
+      const p = document.createElement('div');
+      p.classList.add('particle');
+      
+      const angle = angles[i] * (Math.PI / 180);
+      const distance = 80 + Math.random() * 40; 
+      const mx = Math.cos(angle) * distance;
+      const my = Math.sin(angle) * distance;
+
+      p.style.left = `${originX}px`;
+      p.style.top = `${originY}px`;
+      p.style.setProperty('--mx', `${mx}px`);
+      p.style.setProperty('--my', `${my}px`);
+      p.style.animation = 'starBurst 0.5s cubic-bezier(0.1, 0.8, 0.3, 1) forwards';
+
+      fxLayer.appendChild(p);
+      setTimeout(() => { p.remove(); }, 500);
+    }
+  }
+</script>
+</body>
+</html>
+0"/>
+<stop offset="100%" stop-color="#C9C9C9" stop-opacity="0.6"/>
+</linearGradient>
+</defs>
+</svg>
+</div>
+
+<svg id="hammer" class="hammer" viewBox="0 0 220 320" xmlns="http://www.w3.org/2000/svg">
+<rect x="96" y="90" width="28" height="220" rx="10" fill="#B97A3D" stroke="#1E1B16" stroke-width="8"/>
+<rect x="20" y="10" width="180" height="100" rx="22" fill="#D8432B" stroke="#1E1B16" stroke-width="9"/>
+<rect x="20" y="10" width="180" height="34" rx="16" fill="#F0654A"/>
+</svg>
+
+<div class="fx-layer" id="fxLayer">
+<div class="bonk-text" id="bonkText">BONK!</div>
+</div>
+
+<button class="bonk-btn" id="bonkBtn">
+<span>BONK!</span>
+</button>
+</main>
+
+<script>
+const bonkBtn = document.getElementById('bonkBtn');
+const hammer = document.getElementById('hammer');
+const character = document.getElementById('character');
+const charShadow = document.getElementById('charShadow');
+const bonkText = document.getElementById('bonkText');
+const stage = document.getElementById('stage');
+const fxLayer = document.getElementById('fxLayer');
+
+let isAnimating = false;
+
+bonkBtn.addEventListener('click', () => {
+if (isAnimating) return;
+isAnimating = true;
+
+// 1. Start Heavy Hammer Swing Animation
+hammer.classList.add('hammer-swing');
+
+// 2. Exact Timing for Impact (at 30% / 0.25s of the swing)
+setTimeout(() => {
+// Character Squash (Flattens and stays down)
+character.classList.add('squash-anim');
+if(charShadow) charShadow.style.transform = 'translateX(-50%) scale(1.3, 0.7)';
+
+// Comic Text Pop
+bonkText.classList.add('pop');
+
+// Screen Shake & Flash
+stage.classList.add('shake');
+fxLayer.classList.add('flash');
+
+// Spawn Star Burst Particles
+createBurstParticles();
+
+}, 260);
+
+// 3. Reset All Animations after completion
+setTimeout(() => {
+hammer.classList.remove('hammer-swing');
+character.classList.remove('squash-anim');
+bonkText.classList.remove('pop');
+stage.classList.remove('shake');
+fxLayer.classList.remove('flash');
+if(charShadow) charShadow.style.transform = 'translateX(-50%) scale(1)';
+
+isAnimating = false;
+}, 900);
+});
+
+// Function to generate premium game juice particles (Stars)
+function createBurstParticles() {
+const numParticles = 8;
+const angles = [0, 45, 90, 135, 180, 225, 270, 315];
+
+// Target area near the character's head
+const originX = stage.offsetWidth / 2 - 20;
+const originY = stage.offsetHeight * 0.35;
+
+for (let i = 0; i < numParticles; i++) {
+const p = document.createElement('div');
+p.classList.add('particle');
+
+// Calculate directional explosion vectors
+const angle = angles[i] * (Math.PI / 180);
+const distance = 70 + Math.random() * 40;
+const mx = Math.cos(angle) * distance;
+const my = Math.sin(angle) * distance;
+
+p.style.left = ${originX}px; p.style.top = ``${originY}px;
+p.style.setProperty('--mx', ${mx}px); p.style.setProperty('--my', ``${my}px);
+
+// Apply style directly for mobile performance
+p.style.animation = 'starBurst 0.5s cubic-bezier(0.1, 0.8, 0.3, 1) forwards';
+
+fxLayer.appendChild(p);
+
+// Clean up DOM
+setTimeout(() => { p.remove(); }, 500);
+}
+}
+</script>
+</body>
+</html>
